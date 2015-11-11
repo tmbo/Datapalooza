@@ -52,9 +52,23 @@ def train_model_for_directory(dataset_directory):
 
 def main(sc):
     """Main entry point. Connects to cassandra and creates a spark job to start training."""
-  
-    # implement the magic!
+    
+    output_file = os.path.join(conf["working_directory"], "models.csv")
+    if os.path.exists(output_file):
+        shutil.rmtree(output_file)
+    
+    # We are going to train one model for each directory in the root folder. The directory needs to contain the
+    # dataset to train on
+    dataset_dirs = map(lambda fname: os.path.join(conf["dataset_directory"], fname), 
+                       os.listdir(os.path.join(conf["dataset_directory"])))
 
+    # Make sure we ignore non-folders, e.g. zip files
+    dataset_dirs = filter(lambda fname: os.path.isdir(fname), dataset_dirs)
+    
+    sc \
+        .parallelize(dataset_dirs) \
+        .map(train_model_for_directory) \
+        .saveAsTextFile(output_file)
 
 if __name__ == '__main__':
 
